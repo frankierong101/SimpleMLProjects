@@ -1,9 +1,13 @@
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
-import pandas as pd
 import os
+import pandas as pd
+from sklearn.metrics import accuracy_score
+# from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+
+## Initialise
+model = LogisticRegression(max_iter=1000)
+
 
 script_dir = os.path.dirname(__file__)
 file_path = os.path.join(script_dir, 'titanic_data.csv')
@@ -35,10 +39,9 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_
 # x_test_scaled = scaler.transform(x_test)
 
 ## Fitting
-model = LogisticRegression(max_iter=1000)
 model.fit(x_train, y_train)
 
 ## Accuracy Check
 y_prediction = model.predict(x_test)
-accuracy = accuracy_score(y_test, y_prediction)
-print(f"Accuracy: {accuracy:.2f}")
+accuracy = accuracy_score(y_test, y_prediction) * 100
+print(f"Accuracy: {accuracy:.2f}%")
