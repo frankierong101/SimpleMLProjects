@@ -8,7 +8,6 @@ from sklearn.preprocessing import StandardScaler
 ## Initialise
 le = LabelEncoder()
 scaler = MinMaxScaler()
-# TRY THIS AND COMPARE 
 # scaler = StandardScaler()
 knn = NearestNeighbors(n_neighbors=6, metric='cosine')
 
@@ -18,17 +17,11 @@ df = pd.read_csv(file_path)
 
 ## Cleaning 
 # print(f" Before: {len(df)}")
-df = df.dropna(subset=['Name', 'Platform', 'Genre', 'Publisher', 'NA_Sales', 'EU_Sales', 'JP_Sales', 'Other_Sales', 'Year'])
+df = df.dropna(subset=(df.columns.tolist()))
 # print(f" After: {len(df)}")
 
-# TRY THIS AND COMPARE 
-# df = df.dropna(subset=(df.columns.tolist()))
-
-
-df['Total_Sales'] = df['NA_Sales'] + df['EU_Sales'] + df['JP_Sales'] + df['Other_Sales']
-# print(df['Total Sales'])
 # print(df.columns.tolist())
-df_recommend = df[['Name', 'Platform', 'Genre', 'Publisher', 'Total_Sales', 'Year']].copy()
+df_recommend = df[['Name', 'Platform', 'Genre', 'Publisher', 'Global_Sales', 'Year']].copy()
 
 df_recommend['Year'] = scaler.fit_transform(df_recommend[['Year']])
 df_recommend['Platform'] = le.fit_transform(df_recommend['Platform'])
@@ -38,18 +31,22 @@ df_recommend['Publisher'] = le.fit_transform(df_recommend['Publisher'])
 # print(df['Platform'].unique())
 
 ## Fitting
-knn.fit(df_recommend[['Platform', 'Genre', 'Publisher', 'Total_Sales', 'Year']])
+knn.fit(df_recommend[['Platform', 'Genre', 'Publisher', 'Global_Sales', 'Year']])
 
 def recommend(game_name):
-    #Finding game index
+    if game_name not in df_recommend['Name'].values:
+        print(f"Sorry, '{game_name}' not found in the dataset.")
+        return
+
+    # Finding game index
     game_index = df_recommend[df_recommend['Name'] == game_name].index[0]
     
-    #Finding similar games
-    features_df = df_recommend.loc[[game_index], ['Platform', 'Genre', 'Publisher', 'Total_Sales', 'Year']]
+    # Finding similar games
+    features_df = df_recommend.loc[[game_index], ['Platform', 'Genre', 'Publisher', 'Global_Sales', 'Year']]
     distances, indices = knn.kneighbors(features_df)
 
     print(f"Recommendations for {game_name}:")
-    print("-"*30)
+    print("-"*30) # Visuals
     for i in indices[0]:
         if i != game_index:
             print(df_recommend.iloc[i]['Name'])
