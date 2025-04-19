@@ -3,6 +3,7 @@ This is just a simple model to refresh my memory. I only used a chatbot to produ
 
 ## Steps to run
 1. Enter github codespaces
+
 2. Copy paste the two following commands one by one into the terminal
 ```sh
 cd LinearRegression
