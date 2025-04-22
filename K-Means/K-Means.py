@@ -41,6 +41,9 @@ df['Cluster'] = clusters
 ## Metrics + Stats
 silhouette_avg = silhouette_score(x_scaled, clusters)
 print(f"\nSilhouette Score: {silhouette_avg:.3f}")
-
+print("+" + "-" * 22 + "+")
 cluster_counts = df['Cluster'].value_counts()
 print(cluster_counts)
+print("+" + "-" * 43 + "+")
+cluster_stats = df.groupby('Cluster')[['Buy', 'Sell', 'Price_Ratio']].mean()
+print(cluster_stats)
