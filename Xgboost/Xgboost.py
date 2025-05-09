@@ -1,4 +1,4 @@
-import os
+import os, re
 import time
 import numpy as np
 import pandas as pd
@@ -18,6 +18,20 @@ start_time = time.time()
 # print(len(df['Global_Sales']))
 
 ## Feature engineering
+pattern = r'''
+    \b(?:[IVX]+|\d+)\b                # Roman numerals (VII, X) or standalone digits (2, 3)
+    |                                  
+    (?:Part|Episode|Volume|Expansion|DLC|Season)\s+\d+  # "Part 2", "DLC 3"
+    |                                  
+    \d+(?:st|nd|rd|th)\b              # Ordinals like "1st", "2nd" (less common but possible)
+    |                                  
+    \b\d+[-:]\d+\b                    # Hyphenated/colon formats (e.g., "X-2", "2-3")
+    |                                  
+    \b\d+[kK]\d*\b                    # Alphanumeric patterns like "2K24", "3K"
+'''
+regex = re.compile(pattern, flags=re.IGNORECASE | re.VERBOSE)
+df['Sequel'] = df['Name'].str.contains(regex, na=False).astype(int)
+
 df['TitleLength'] = df['Name'].str.len()
 df['YearsSinceRelease'] = 2025 - df['Year']
 df['Decade'] = (df['Year'] // 10) * 10
@@ -31,7 +45,7 @@ encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
 
 # Combining and splitting data
 x_categorical = encoder.fit_transform(df[['Platform', 'Genre', 'Publisher', 'DominantRegion']])
-x_numerical = df[['Year','TitleLength','YearsSinceRelease','Decade','Platform_Age','Platform_Age_Squared', 'TitleWordCount']].values
+x_numerical = df[['Year','TitleLength','YearsSinceRelease','Decade','Platform_Age','Platform_Age_Squared', 'TitleWordCount', 'Sequel']].values
 # x_numerical = scaler.fit_transform(x_numerical)
 x_features = np.hstack([x_numerical, x_categorical])
 
@@ -42,20 +56,19 @@ y_target = np.sqrt(y_target)
 
 x_train, x_test, y_train, y_test = train_test_split(x_features, y_target, test_size=0.2, random_state=1000)
 
-# Create GPU DMatrix for efficient CV
-dtrain = xgb.DMatrix(x_train, label=y_train)
-######################################################################################
+dtrain = xgb.DMatrix(x_train, label=y_train) # Fitting into a matrix to run xgboost with GPU support
+###################################################################################### HYPERPARAMETER TUNING
 #  random_param_grid = {
 #     'subsample': [0.4, 0.5, 0.6],
-#     # 'n_estimators': [500, 600, 700],	
 #     'max_depth': [8, 9, 10],
 #     'learning_rate': [0.01, 0.02, 0.03],
-#     'colsample_bytree': [0.7, 0.8, 0.9]
+#     'colsample_bytree': [0.7, 0.8, 0.9],
+#     # 'n_estimators': [500, 600, 700]
 # }
 
 # xgb_model = xgb.XGBRegressor(
 #     objective='reg:squarederror',
-#     tree_method='hist',  # Use histogram-based training
+#     tree_method='hist',  # Faster historgram tree method
 #     device='cuda',  # Train on GPU
 #     random_state=2004
 # )
@@ -68,14 +81,13 @@ dtrain = xgb.DMatrix(x_train, label=y_train)
 #     verbose=2,
 #     random_state=2004,
 #     scoring='r2',
-#     n_jobs=1  # use all CPU cores
+#     n_jobs=1  # uses 1 CPU core
 # )
 
 # # Use NumPy arrays for RandomizedSearchCV
 # random_search.fit(x_train, y_train)
 # print("Best parameters found: ", random_search.best_params_)
 # print("Best r2 found: ", random_search.best_score_)
-
 # best_params = random_search.best_params_
 # print(best_params)
 # params = {
@@ -93,14 +105,13 @@ params = {
     'tree_method': 'hist',
     'device': 'cuda',
     # 'booster': 'dart', 
+    'verbosity': 1,
+    'random_state': 2004,
 
     'max_depth': 9,
     'learning_rate': 0.02,
     'subsample': 0.5,
     'colsample_bytree': 0.8,
-    
-    'verbosity': 1,
-    'random_state': 2004,
 }
 
 
@@ -109,9 +120,9 @@ evals = xgb.cv(
     params,
     dtrain,
     num_boost_round=1201,
-    nfold=3,
+    nfold=15,
     metrics='rmse',
-    # early_stopping_rounds=20,
+    early_stopping_rounds=20,
     seed=2004,
     as_pandas=True,
     verbose_eval=100
@@ -138,4 +149,3 @@ print(f"Test R²: {r2:.3f}")
 
 end_time = time.time()
 print(f"Total runtime: {end_time - start_time:.2f} seconds")
-######################################################################################

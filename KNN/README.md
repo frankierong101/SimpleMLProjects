@@ -1,7 +1,7 @@
 # KNN Game Recommender
 I used the [Video games Sales](https://www.kaggle.com/datasets/gregorut/videogamesales) dataset from Kaggle and built a simple game recommender using KNN. I had a lot of features for each game from this dataset so KNN could effectively recommend games based on feature distance.
 
-There aren't numerical metrics that I could measure my KNN model with since it's unsupervised. I tried using a `standard scaler()` instead of the `minmaxscaler()` but both netted me the same results.
+There aren't numerical metrics that I could measure my KNN model with since it's unsupervised. I tried using a `StandardScaler()` instead of the `MinMaxScaler()` but both netted me the same results.
 
 ## Steps to run
 1. Enter github codespaces for this repository 
